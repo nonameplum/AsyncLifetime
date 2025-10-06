@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Select Xcode 16.4
+      run: sudo xcode-select -s /Applications/Xcode_16.4.app
+        
+    - name: Build and Test
+      run: |
+        swift build -c release
+        swift test
+        
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        TAG_NAME="${GITHUB_REF#refs/tags/}"
+        REPO_NAME="${GITHUB_REPOSITORY#*/}"
+        REPO_OWNER="${GITHUB_REPOSITORY%/*}"
+        DOCS_URL="https://${REPO_OWNER}.github.io/${REPO_NAME}/${TAG_NAME}/documentation/asynclifetime/"
+        
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        echo "## 📚 Documentation" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        echo "View the complete documentation for this release at:" >> $GITHUB_OUTPUT
+        echo "[${TAG_NAME} Documentation](${DOCS_URL})" >> $GITHUB_OUTPUT
+        echo "" >> $GITHUB_OUTPUT
+        
+        if git describe --tags --abbrev=0 HEAD^ >/dev/null 2>&1; then
+          echo "## What's Changed" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log --pretty=format:"* %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/$(git describe --tags --abbrev=0 HEAD^)...${TAG_NAME}" >> $GITHUB_OUTPUT
+        else
+          echo "## What's Changed" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "Initial release" >> $GITHUB_OUTPUT
+        fi
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release ${{ github.ref_name }}
+        body: |
+          ${{ steps.changelog.outputs.CHANGELOG }}
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+        token: ${{ secrets.GITHUB_TOKEN }}
