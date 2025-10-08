@@ -1,5 +1,9 @@
 # AsyncLifetime
 
+<p align="center">
+  <img src="resources/AsyncLifetime-logo.png" alt="AsyncLifetime Logo" width="200"/>
+</p>
+
 Automatic lifetime management for async sequences, preventing retain cycles and ensuring proper resource cleanup in Swift's async/await world.
 
 AsyncLifetime provides a suite of functions that automatically bind async sequence processing to object lifetimes. When the target object is deallocated, any ongoing async operations are automatically cancelled, preventing retain cycles and unnecessary computation.
