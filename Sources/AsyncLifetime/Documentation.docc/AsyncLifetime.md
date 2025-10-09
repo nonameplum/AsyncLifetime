@@ -42,12 +42,12 @@ With AsyncLifetime, operations automatically stop when the object is deallocated
 @MainActor
 @Observable
 class Model {
-    var items: [String] = []
+    var value: String
     private var cancellables = Set<AnyLifetimeCancellable>()
 
     init(dataStream: AsyncStream<String>) {
         dataStream
-            .assign(to: \.items, weakOn: self)
+            .assign(to: \.value, weakOn: self)
             .store(in: &cancellables)
     }
 }
