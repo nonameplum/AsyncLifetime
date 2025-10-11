@@ -1,5 +1,7 @@
 import Foundation
 
+@testable import AsyncLifetime
+
 // MARK: - Test Utilities
 
 /// Thread-safe container for testing concurrent access
@@ -176,8 +178,6 @@ class FakeMainActorObserver {
 }
 
 // MARK: - Test Cancellables
-
-@testable import AsyncLifetime
 
 /// Reusable test cancellable with configurable behavior
 struct CustomCancellable: LifetimeCancellable {
