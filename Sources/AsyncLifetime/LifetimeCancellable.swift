@@ -31,11 +31,18 @@ extension LifetimeCancellable {
   /// This method appends the cancellable to a collection for later batch cancellation
   /// or automatic cleanup when the collection is deallocated.
   ///
+  /// If this cancellable is already an `AnyLifetimeCancellable`, it will be stored directly,
+  /// preserving instance identity. Otherwise, a new wrapper will be created.
+  ///
   /// - Parameter collection: A mutable collection to store the cancellable in.
   public func store<Cancellables: RangeReplaceableCollection>(
     in collection: inout Cancellables
   ) where Cancellables.Element == AnyLifetimeCancellable {
-    AnyLifetimeCancellable(self).store(in: &collection)
+    if let anyLifetimeCancellable = self as? AnyLifetimeCancellable {
+      anyLifetimeCancellable.store(in: &collection)
+    } else {
+      AnyLifetimeCancellable(self).store(in: &collection)
+    }
   }
 
   /// Stores this cancellable in the specified set.
@@ -43,9 +50,16 @@ extension LifetimeCancellable {
   /// This method inserts the cancellable into a set for later batch cancellation
   /// or automatic cleanup when the set is deallocated.
   ///
+  /// If this cancellable is already an `AnyLifetimeCancellable`, it will be stored directly,
+  /// preserving instance identity. Otherwise, a new wrapper will be created.
+  ///
   /// - Parameter set: A mutable set to store the cancellable in.
   public func store(in set: inout Set<AnyLifetimeCancellable>) {
-    AnyLifetimeCancellable(self).store(in: &set)
+    if let anyLifetimeCancellable = self as? AnyLifetimeCancellable {
+      anyLifetimeCancellable.store(in: &set)
+    } else {
+      AnyLifetimeCancellable(self).store(in: &set)
+    }
   }
 }
 

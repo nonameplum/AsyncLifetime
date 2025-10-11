@@ -1,5 +1,7 @@
 import Foundation
 
+@testable import AsyncLifetime
+
 // MARK: - Test Utilities
 
 /// Thread-safe container for testing concurrent access
@@ -172,6 +174,31 @@ class FakeMainActorObserver {
 
   func process(_ value: Int) {
     processedValues.append(value)
+  }
+}
+
+// MARK: - Test Cancellables
+
+/// Reusable test cancellable with configurable behavior
+struct CustomCancellable: LifetimeCancellable {
+  let id: UUID
+  let cancelClosure: @Sendable () -> Void
+
+  init(id: UUID = UUID(), cancelClosure: @escaping @Sendable () -> Void = {}) {
+    self.id = id
+    self.cancelClosure = cancelClosure
+  }
+
+  func cancel() {
+    cancelClosure()
+  }
+
+  static func == (lhs: CustomCancellable, rhs: CustomCancellable) -> Bool {
+    lhs.id == rhs.id
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
   }
 }
 

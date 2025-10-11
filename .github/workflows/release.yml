@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - '*'
+  workflow_dispatch:
 
 jobs:
   create-release:
@@ -22,6 +23,7 @@ jobs:
         
     - name: Build and Test
       run: |
+        rm -rf .build
         swift build -c release
         swift test
         
