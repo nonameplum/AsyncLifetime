@@ -504,14 +504,6 @@ struct LifetimeCancellableTests {
 
   @Test("Protocol extension store in Set works")
   func protocol_extension_store_in_set() {
-    struct CustomCancellable: LifetimeCancellable {
-      let cancelClosure: @Sendable () -> Void
-
-      func cancel() {
-        cancelClosure()
-      }
-    }
-
     let wasCancelled = LockIsolated(false)
 
     do {
@@ -531,14 +523,6 @@ struct LifetimeCancellableTests {
 
   @Test("Protocol extension store in Collection works")
   func protocol_extension_store_in_collection() {
-    struct CustomCancellable: LifetimeCancellable {
-      let cancelClosure: @Sendable () -> Void
-
-      func cancel() {
-        cancelClosure()
-      }
-    }
-
     let wasCancelled = LockIsolated(false)
 
     do {
@@ -558,17 +542,9 @@ struct LifetimeCancellableTests {
 
   @Test("Type erases to AnyLifetimeCancellable")
   func type_erases_correctly() {
-    struct CustomCancellable: LifetimeCancellable {
-      let cancelClosure: @Sendable () -> Void
-
-      func cancel() {
-        cancelClosure()
-      }
-    }
-
     var cancellables = Set<AnyLifetimeCancellable>()
 
-    let customCancellable = CustomCancellable {}
+    let customCancellable = CustomCancellable()
     customCancellable.store(in: &cancellables)
 
     #expect(cancellables.count == 1)
@@ -696,5 +672,47 @@ struct LifetimeCancellableTests {
     cancellable.cancel()
 
     #expect(callCount.value == 1, "Cancelled once despite multiple storage")
+  }
+
+  // MARK: - Store Reuse Tests
+
+  @Test("AnyLifetimeCancellable store reuses same instance in Set")
+  func any_lifetime_cancellable_store_reuses_instance_in_set() {
+    let cancelCount = LockIsolated(0)
+
+    let cancellable = AnyLifetimeCancellable {
+      cancelCount.withValue { $0 += 1 }
+    }
+
+    var set = Set<AnyLifetimeCancellable>()
+
+    // Store the same AnyLifetimeCancellable twice
+    cancellable.store(in: &set)
+    cancellable.store(in: &set)
+
+    // Fixed: Same instance is reused, Set deduplicates
+    #expect(set.count == 1, "Same wrapper instance stored, Set deduplicates")
+
+    // Cancel all wrappers - should only cancel once
+    set.forEach { $0.cancel() }
+
+    #expect(cancelCount.value == 1, "Single cancellation occurs")
+  }
+
+  @Test("AnyLifetimeCancellable store reuses same instance in Array")
+  func any_lifetime_cancellable_store_reuses_instance_in_array() {
+    let cancellable = AnyLifetimeCancellable {}
+
+    var array: [AnyLifetimeCancellable] = []
+
+    // Store the same AnyLifetimeCancellable twice
+    cancellable.store(in: &array)
+    cancellable.store(in: &array)
+
+    #expect(array.count == 2, "Both store() calls append to array")
+
+    // Fixed: Same wrapper instance is stored both times
+    #expect(array[0] == array[1], "Same wrapper instance in both positions")
+    #expect(array[0] == cancellable, "Stored instance matches original")
   }
 }
